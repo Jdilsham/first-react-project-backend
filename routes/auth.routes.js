@@ -11,12 +11,13 @@ const router = express.Router();
  */
 router.post("/register", async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { firstName, lastName, email, password, role } = req.body;
 
-    if (!name || !email || !password) {
+    if (!firstName || !lastName || !email || !password) {
       return res.status(400).json({ message: "All fields required" });
     }
 
+    // check if email already exists
     const existingUser = await pool.query(
       "SELECT id FROM users WHERE email = $1",
       [email]
@@ -26,14 +27,23 @@ router.post("/register", async (req, res) => {
       return res.status(409).json({ message: "Email already exists" });
     }
 
+    // hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // insert user
     await pool.query(
-      "INSERT INTO users (name, email, password) VALUES ($1, $2, $3)",
-      [name, email, hashedPassword]
+      `INSERT INTO users (first_name, last_name, email, password, role)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [
+        firstName,
+        lastName,
+        email,
+        hashedPassword,
+        role || "USER"
+      ]
     );
 
-    res.status(201).json({ message: "User registered successfully ✅" });
+    res.status(201).json({ message: "User registered successfully" });
 
   } catch (error) {
     console.error(error);
@@ -54,7 +64,9 @@ router.post("/login", async (req, res) => {
     }
 
     const result = await pool.query(
-      "SELECT id, name, email, password FROM users WHERE email = $1",
+      `SELECT id, first_name, last_name, email, password, role
+       FROM users
+       WHERE email = $1`,
       [email]
     );
 
@@ -70,8 +82,12 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
+    // generate JWT (include role)
     const token = jwt.sign(
-      { userId: user.id, email: user.email },
+      {
+        userId: user.id,
+        role: user.role
+      },
       process.env.JWT_SECRET,
       { expiresIn: "1d" }
     );
@@ -81,8 +97,10 @@ router.post("/login", async (req, res) => {
       token,
       user: {
         id: user.id,
-        name: user.name,
-        email: user.email
+        firstName: user.first_name,
+        lastName: user.last_name,
+        email: user.email,
+        role: user.role
       }
     });
 
