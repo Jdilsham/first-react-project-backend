@@ -98,6 +98,12 @@ router.put("/:id", async (req, res) => {
       return res.status(400).json({ message: "Stock cannot be negative" });
     }
 
+    const safeImages = images && images.length > 0 ? images : null;
+    const safeAltNames = altNames && altNames.length > 0 ? altNames : null;
+    const parsedPrice = price !== undefined ? Number(price) : null;
+    const parsedLabeledPrice = labeledPrice !== undefined ? Number(labeledPrice) : null;
+    const parsedStock = stock !== undefined ? Number(stock) : null;
+
     const result = await pool.query(
       `
       UPDATE products
@@ -111,7 +117,7 @@ router.put("/:id", async (req, res) => {
         images = COALESCE($7, images),
         alt_names = COALESCE($8, alt_names),
         stock = COALESCE($9, stock)
-      WHERE id = $10
+      WHERE product_id = $10
       RETURNING *
       `,
       [
@@ -119,11 +125,11 @@ router.put("/:id", async (req, res) => {
         name,
         category,
         description,
-        price,
-        labeledPrice,
-        images,
-        altNames,
-        stock,
+        parsedPrice,
+        parsedLabeledPrice,
+        safeImages,
+        safeAltNames,
+        parsedStock,
         id
       ]
     );
@@ -137,9 +143,12 @@ router.put("/:id", async (req, res) => {
       product: result.rows[0]
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Server error" });
-  }
+      console.error("UPDATE PRODUCT ERROR:", error.message);
+      res.status(500).json({
+        message: "Server error",
+        error: error.message
+      });
+    }
 });
 
 export default router;
