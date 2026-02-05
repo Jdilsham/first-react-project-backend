@@ -4,7 +4,6 @@ import dotenv from "dotenv";
 import authRoutes from "./routes/auth.routes.js";
 import productRoutes from "./routes/product.routes.js";
 
-
 dotenv.config();
 
 const app = express();
@@ -14,6 +13,7 @@ app.use(express.json());
 
 // routes
 app.use("/api/auth", authRoutes);
+app.use("/api/products", productRoutes);
 
 app.get("/", (req, res) => {
   res.json({ message: "Backend Running 🚀" });
@@ -23,5 +23,3 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
-
-app.use("/api/products", productRoutes);

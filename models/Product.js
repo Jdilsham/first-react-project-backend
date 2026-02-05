@@ -47,6 +47,7 @@ const Product = sequelize.define(
     altNames: {
       type: DataTypes.ARRAY(DataTypes.TEXT),
     },
+    
   },
   {
     tableName: "products",
